@@ -5,7 +5,12 @@ class Item extends PureComponent {
   render() {
     return (
       <li className="item">
-        <a className="box" href={this.props.src}>
+        <a
+          className="box"
+          href={this.props.src}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Highlighter
             className="item__name"
             highlightClassName="matched"
