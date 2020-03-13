@@ -1,118 +1,135 @@
 import React, { Component } from 'react';
-import _ from 'lodash';
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import SearchField from "react-search-field";
-import ImageList from './ImageList';
+import debounce from 'lodash-es/debounce';
+import SearchField from 'react-search-field';
+
+import ItemList from './ItemList';
+
 import './App.css';
 
+import initialData from './initialData.json';
+
+const PAGE_SIZE = 5;
 
 class App extends Component {
   constructor(props) {
     super(props);
-    this.allList = [];
 
     this.state = {
-      matchedlist: [],
-      imgcnt: 5
-    };
+      loading: true,
+      error: null,
 
-    this.onKeywordChanged = _.debounce(this.onKeywordChanged.bind(this), 300, {
-      leading: true,
-      trailing: true
-    });
+      // search terms splitted by space
+      keywords: [],
+
+      allItems: [],
+      matchedItems: [],
+
+      page: PAGE_SIZE
+    };
   }
 
   async componentDidMount(){
-    const data = await fetch('https://api.github.com/repos/astrine/eroge_radio/contents/img/')
-    this.allList = (await data.json()).map(value => ({
-        name: value.name.substring(0, value.name.lastIndexOf('.')),
-        src: value.download_url
-    }));
-    this.onKeywordChanged("");
+    this.setState({ allItems: initialData.map(this.mapRemoteData) });
+
+    try {
+      const allItems = await fetch('https://api.github.com/repos/astrine/eroge_radio/contents/img/')
+        .then(res => res.json())
+        .then(this.mapRemoteData);
+      this.setState({ allItems, loading: false });
+    } catch (error) {
+      this.setState({ error, loading: false });
+    }
   }
-  
+
   componentWillMount() {
-    window.addEventListener('scroll', () => {
-      if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-        this.setState({
-          ...this.state, imgcnt: this.state.imgcnt + 5
-        });
-      }
-    });
+    window.addEventListener('scroll', this.onScroll);
   }
 
   componentWillUnmount() {
-    window.removeEventListener('scroll');
+    window.removeEventListener('scroll', this.onScroll);
   }
 
-  async onKeywordChanged(keyword) {
-    const keywords = keyword.toLowerCase().split(' ').filter(_ => _);
+  mapRemoteData = item => {
+    return {
+      name: item.name.split('.')[0],
+      src: item.download_url,
+    };
+  };
 
-    // const getSize = (url) => 
-    //   new Promise((resolve, reject) => {
-    //     const img = new Image();
-        
-    //     img.onerror = reject;
-    //     img.onload = () => {
-    //       const {width, height} = img;
-    //       console.log({width, height})
-    //       resolve({width, height});
-    //     };
-    //     img.src = url;
-    //   });
+  onScroll = debounce(() => {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+      this.setState({
+        page: this.state.page + PAGE_SIZE
+      });
+    }
+  }, 300);
 
-    const matchedlist = this.getMatchedList(keywords);
-
-    // const imglist = await Promise.all(
-    //   this.matchedlist.map( 
-    //     async (imginfo, idx) => {
-    //       if (idx < imgcnd)
-    //       return { ...(idx < imgcnd ? await getSize(imginfo.src) : { width: 0, height: 0 }), ...imginfo };
-    //     } 
-    //   ));
-    
+  onKeywordChanged = debounce(async (search) => {
+    const keywords = search.toLowerCase().split(' ').filter(Boolean);
+    const matchedItems = this.getMatchedItems(keywords);
     this.setState({
-      matchedlist,
+      matchedItems,
       keywords,
-      imgcnt: 5
+      page: PAGE_SIZE
     });
-  }
+  }, 300);
 
-  getMatchedList(keywords) {
-    if (!keywords) return this.allList;
-    return _(this.allList)
-      .filter( value => _.every(keywords, key => value.name.toLowerCase().includes(key)) )
-      .value();
-  }
+  getMatchedItems = (keywords) => {
+    if (!keywords) return this.state.allItems;
+    return this.state.allItems
+      .filter(item => item.name.toLowerCase().match(keywords.join("|")));
+  };
 
   render() {
-    const found = this.state.matchedlist.length > 0;
+    const isLoading = this.state.loading;
+    const hasError = !!this.state.error;
+    const hasKeywords = this.state.keywords.length > 0;
+    const itemCount = hasKeywords
+      ? this.state.matchedItems.length
+      : this.state.allItems.length;
+    const found = itemCount >= 0;
 
     return (
       <div className="react-search-field-demo container">
-        <div>
-          <h3>안즈하나콘 검색기</h3>
-        </div>
-        <div>
+        <header>
+          <h1 className="title">안즈하나콘 검색기</h1>
+          <p className="description">
+            {`오토메 도메인 라디오 메이든(オトメ＊ドメイン RADIO＊MAIDEN) 등에서 나온 명대사를 검색할 수 있습니다.
+            대사들이 다소 수위가 있고 남성향 에로게 관련 대사가 다수 등장하므로 이용에 주의 부탁드립니다.`}
+          </p>
+
           <SearchField
             placeholder="검색어를 입력하세요"
             onChange={this.onKeywordChanged}
           />
-          
-          <div className="list-body" style={ found ? {} : { display: 'none' } }>
-            <ul>{this.state.matchedlist.length} 개의 결과가 있습니다.</ul>
+
+          <div className="box search-result">
+            {isLoading && (
+              `로딩중입니다...`
+            )}
+            {!isLoading && hasError && (
+              `로딩 실패 ㅠㅠ`
+            )}
+            {!isLoading && !hasError && (
+              `${itemCount} 개의 결과가 있습니다.`
+            )}
+            {!isLoading && !hasError && !found && (
+              `결과가 없어요 ㅠㅠ`
+            )}
           </div>
-          <div className="list-body" style={ !found && this.state.keywords ? {} : { display: 'none' } }>
-            <ul>결과가 없어요 ㅠㅠ</ul>
-          </div>
-          <div className="list-body" style={ !found && !this.state.keywords ? {} : { display: 'none' } }>
-            <ul>로딩중입니다...</ul>
-          </div>
-          <ImageList
-            list={_.take(this.state.matchedlist, this.state.imgcnt)}
-            keywords={this.state.keywords}
-          />
-        </div>
+        </header>
+
+        <main className="main">
+          {!isLoading && (
+            <ItemList
+              list={hasKeywords
+                ? this.state.matchedItems.slice(0, this.state.page)
+                : this.state.allItems
+              }
+              keywords={this.state.keywords}
+            />
+          )}
+        </main>
       </div>
     );
   }
