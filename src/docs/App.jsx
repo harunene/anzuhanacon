@@ -34,7 +34,7 @@ class App extends Component {
     try {
       const allItems = await fetch('https://api.github.com/repos/astrine/eroge_radio/contents/img/')
         .then(res => res.json())
-        .then(this.mapRemoteData);
+        .then(res => res.map(this.mapRemoteData));
       this.setState({ allItems, loading: false });
     } catch (error) {
       this.setState({ error, loading: false });
@@ -120,7 +120,7 @@ class App extends Component {
         </header>
 
         <main className="main">
-          {!isLoading && (
+          {(
             <ItemList
               list={hasKeywords
                 ? this.state.matchedItems.slice(0, this.state.page)

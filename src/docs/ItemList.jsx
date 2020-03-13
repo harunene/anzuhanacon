@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 
 import Item from './Item';
 
-class ImageList extends Component {
+class ItemList extends Component {
   render() {
     return (
       <ul className="item-list">
@@ -18,4 +18,4 @@ class ImageList extends Component {
   }
 };
 
-export default ImageList;
+export default ItemList;
