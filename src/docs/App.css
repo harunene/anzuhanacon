@@ -1,5 +1,18 @@
-.react-search-field-demo {
+.App {
   padding: 1.25rem;
+}
+
+.searchPanel {
+  display: block;
+  font-size: 1rem;
+  position: -webkit-sticky;
+  position: sticky;
+  overflow-anchor: none;
+  top: 0rem;
+  padding: 1.25rem 0 0.25rem 0;
+  margin-top: -1.25rem;
+  background-color: #fff;
+  box-shadow: 0 1px 0 0px #ddd;
 }
 
 .box {
@@ -13,13 +26,18 @@
 }
 
 .description {
-  font-size: 1rem;
+  font-size: .9rem;
   white-space: pre-line;
+  word-break: keep-all;
 }
 
 .search-result {
-  font-size: 1.25rem;
+  font-size: 1rem;
   margin: 0.9rem 0;
+}
+
+.react-search-field-input {
+  font-size: 1.25rem !important;
 }
 
 .main {
@@ -51,13 +69,13 @@
   font-size: 1.25rem;
 }
 
-.item__name.matched {
+.item__name > mark.matched {
   padding: 0;
   background-color: yellow;
 }
 
 .item__image-wrapper {
-  height: 20rem;
+  height: 15rem;
 }
 
 .item__image {

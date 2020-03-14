@@ -8,7 +8,7 @@ import './App.css';
 
 import initialData from './initialData.json';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 class App extends Component {
   constructor(props) {
@@ -38,6 +38,7 @@ class App extends Component {
       this.setState({ allItems, loading: false });
     } catch (error) {
       this.setState({ error, loading: false });
+      setTimeout(() => this.setState({ error: null }), 3000);
     }
   }
 
@@ -66,19 +67,16 @@ class App extends Component {
 
   onKeywordChanged = debounce(async (search) => {
     const keywords = search.toLowerCase().split(' ').filter(Boolean);
-    const matchedItems = this.getMatchedItems(keywords);
+    const matchFunc = item => item.name.toLowerCase().match(keywords.join("|"));
+    const matchedItems = this.state.allItems.filter( matchFunc );
     this.setState({
       matchedItems,
       keywords,
-      page: PAGE_SIZE
+      page: PAGE_SIZE,
+      error: null
     });
+    window.scrollTo(0, 0);
   }, 300);
-
-  getMatchedItems = (keywords) => {
-    if (!keywords) return this.state.allItems;
-    return this.state.allItems
-      .filter(item => item.name.toLowerCase().match(keywords.join("|")));
-  };
 
   render() {
     const isLoading = this.state.loading;
@@ -90,25 +88,18 @@ class App extends Component {
     const found = itemCount >= 0;
 
     return (
-      <div className="react-search-field-demo container">
-        <header>
-          <h1 className="title">안즈하나콘 검색기</h1>
-          <p className="description">
-            {`오토메 도메인 라디오 메이든(オトメ＊ドメイン RADIO＊MAIDEN) 등에서 나온 명대사를 검색할 수 있습니다.
-            대사들이 다소 수위가 있고 남성향 에로게 관련 대사가 다수 등장하므로 이용에 주의 부탁드립니다.`}
-          </p>
-
+      <div className="App container">
+        <searchPanel className="searchPanel">
           <SearchField
             placeholder="검색어를 입력하세요"
             onChange={this.onKeywordChanged}
           />
-
           <div className="box search-result">
             {isLoading && (
               `로딩중입니다...`
             )}
             {!isLoading && hasError && (
-              `로딩 실패 ㅠㅠ`
+              `로딩 실패 ㅠㅠ 저장된 데이터를 사용합니다.`
             )}
             {!isLoading && !hasError && (
               `${itemCount} 개의 결과가 있습니다.`
@@ -117,14 +108,22 @@ class App extends Component {
               `결과가 없어요 ㅠㅠ`
             )}
           </div>
-        </header>
+        </searchPanel>
 
+        <header>
+          <h1 className="title">안즈하나콘 검색기</h1>
+          <p className="description">
+            {`오토메 도메인 라디오 메이든(オトメ＊ドメイン RADIO＊MAIDEN) 등에서 나온 명대사를 검색할 수 있습니다.
+            대사들이 다소 수위가 있고 남성향 에로게 관련 대사가 다수 등장하므로 이용에 주의 부탁드립니다.`}
+          </p>
+        </header>
+        
         <main className="main">
           {(
             <ItemList
               list={hasKeywords
                 ? this.state.matchedItems.slice(0, this.state.page)
-                : this.state.allItems
+                : this.state.allItems.slice(0, this.state.page)
               }
               keywords={this.state.keywords}
             />
